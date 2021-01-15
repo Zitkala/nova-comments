@@ -2,6 +2,8 @@
 
 namespace KirschbaumDevelopment\NovaComments\Nova;
 
+use App\Nova\TwitchChannel;
+use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Resource;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -10,10 +12,40 @@ use Laravel\Nova\Fields\MorphTo;
 use Laravel\Nova\Fields\DateTime;
 use Laravel\Nova\Fields\Textarea;
 use Laravel\Nova\Fields\BelongsTo;
-use KirschbaumDevelopment\NovaComments\Models\Comment as CommentModel;
+use App\Models\NovaComment as CommentModel;
 
 class Comment extends Resource
 {
+    /**
+     * Get the logical group associated with the resource.
+     *
+     * @return string
+     */
+    public static function group()
+    {
+        return novaCat('Administration');
+    }
+
+    /**
+     * Get the displayable label of the resource.
+     *
+     * @return string
+     */
+    public static function label()
+    {
+        return __('Comments');
+    }
+
+    /**
+     * Get the displayable singular label of the resource.
+     *
+     * @return string
+     */
+    public static function singularLabel()
+    {
+        return __('Comment');
+    }
+
     /**
      * The model the resource corresponds to.
      *
@@ -37,6 +69,15 @@ class Comment extends Resource
         'comment',
     ];
 
+
+    public static function indexQuery(NovaRequest $request, $query)
+    {
+        if ($request->user()->can(permission(TwitchChannel::class, 'viewAny'))) {
+            return $query;
+        }
+        return $query->whereIn('twitch_id', $request->user()->twitch_channel_rights_twitch_ids);
+    }
+
     /**
      * Get the fields displayed by the resource.
      *
@@ -47,23 +88,17 @@ class Comment extends Resource
     public function fields(Request $request)
     {
         return [
-            Textarea::make(__('Comment'), 'comment')
-                ->alwaysShow()
-                ->hideFromIndex(),
-
             MorphTo::make(__('Commentable'), 'Commentable')->onlyOnIndex(),
 
-            Text::make(__('Comment'), 'comment')
-                ->displayUsing(function ($comment) {
-                    return Str::limit($comment, config('nova-comments.limit'));
-                })
-                ->onlyOnIndex(),
+            Text::make(__('Comment'), 'comment', function () {
+                return Str::limit(htmlspecialchars($this->comment), config('nova-comments.limit', 200));
+            })
+                ->onlyOnIndex()->asHtml(),
 
             BelongsTo::make(__('Commenter'), 'commenter', config('nova-comments.commenter.nova-resource'))
                 ->exceptOnForms(),
 
             DateTime::make(__('Created'), 'created_at')
-                ->format(config('nova-comments.date-format'))
                 ->exceptOnForms()
                 ->sortable(),
         ];

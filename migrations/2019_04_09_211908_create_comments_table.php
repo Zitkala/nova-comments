@@ -12,9 +12,10 @@ class CreateCommentsTable extends Migration
     public function up()
     {
         Schema::create('nova_comments', function (Blueprint $table) {
-            $table->increments('id');
+            $table->id();
             $table->morphs('commentable');
-            $table->unsignedInteger('commenter_id')->nullable();
+            $table->unsignedBigInteger('commenter_id')->nullable();
+            $table->unsignedBigInteger('twitch_id')->nullable();
             $table->text('comment');
             $table->timestamps();
         });

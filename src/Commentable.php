@@ -2,7 +2,7 @@
 
 namespace KirschbaumDevelopment\NovaComments;
 
-use KirschbaumDevelopment\NovaComments\Models\Comment;
+use App\Models\NovaComment;
 
 trait Commentable
 {
@@ -11,6 +11,6 @@ trait Commentable
      */
     public function comments()
     {
-        return $this->morphMany(Comment::class, 'commentable');
+        return $this->morphMany(NovaComment::class, 'commentable');
     }
 }
